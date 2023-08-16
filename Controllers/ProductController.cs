@@ -1,55 +1,99 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using productExpiry_system.Interface.Repository;
-using productExpiry_system.models;
-
+﻿using Application.DTOs;
+using Application.DTOs.Product;
+using Application.Services.Implementation;
+using Application.Services.Interface;
+using BusinessZoneCentral_UserAPI.Controllers;
+using Infrastructure.Helpers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace productExpiry_system.Controllers
 {
-    [ApiController]
-    [Route("Api/[Controller]")]
-    public class ProductController : Controller
+    public class ProductController : BaseController
     {
-        private readonly IProductRepository _productRepository;
-        public ProductController(IProductRepository productRepository)
+        private readonly IProductService _productService;
+        public ProductController(IProductService productService)
         {
-            _productRepository = productRepository;
+            _productService = productService;
         }
-        [HttpGet]
-        public async Task<IActionResult> GetAllProduct()
-        {
-            var Allproducts = await _productRepository.GetProductsAsync();
-           
-            return Ok(Allproducts);
 
-        }
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProductById([FromRoute] int id)
+
+        /// <summary>
+        /// Get Filtered Product
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpGet("[action]")]
+        [Authorize]
+        public ActionResult List([FromQuery] PaginationQuery query)
         {
-            var products = await _productRepository.GetProductsByIdAsync(id);
-            return Ok(products);
+            if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
+            return HandleResult(_productService.List(query));
         }
-        [HttpPost]
-        public async Task<IActionResult> AddnewProduct([FromBody] Productmodel productmodel)
+
+        /// <summary>
+        /// Get Product
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [ProducesResponseType(400, Type = typeof(BaseResponse))]
+        [ProducesResponseType(404, Type = typeof(BaseResponse))]
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpGet("[action]")]
+        [Authorize]
+        public async Task<IActionResult> Get(long id)
         {
-           var product = await _productRepository.AddProductAsync(productmodel);
-            //if (productmodel.ExpiryDate > DateTime.UtcNow)
-            //{
-            //    return ("product ={0} is about to expire", productmodel.ProductName);
-            //}
-          
-            return Ok(product);
+            if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
+            return HandleResult(await _productService.Get(id));
         }
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct([FromBody] Productmodel productmodel, [FromRoute] string id)
+
+        /// <summary>
+        /// Create Product
+        /// </summary>
+        /// <param name="create"></param>
+        /// <returns></returns>
+        [ProducesResponseType(400, Type = typeof(BaseResponse))]
+        [ProducesResponseType(404, Type = typeof(BaseResponse))]
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpPost("[action]")]
+        [Authorize]
+        public async Task<IActionResult> Create(CreateProductDTO create)
         {
-            var products = await _productRepository.UpdateproductAsync(id, productmodel);
-            return Ok(products);
+            if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
+            return HandleResult(await _productService.Create(create));
         }
-        [HttpDelete]
-        public async Task<IActionResult> DeleteProduct ([FromRoute] string id)
+
+        /// <summary>
+        /// Update Product
+        /// </summary>
+        /// <param name="update"></param>
+        /// <returns></returns>
+        [ProducesResponseType(400, Type = typeof(BaseResponse))]
+        [ProducesResponseType(404, Type = typeof(BaseResponse))]
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpPut("[action]")]
+        [Authorize]
+        public async Task<IActionResult> Update(UpdateProductDTO update)
         {
-            await _productRepository.DeleteProductAsync(id);
-            return Ok();
+            if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
+            return HandleResult(await _productService.Update(update));
+        }
+        /// <summary>
+        /// Delete Product
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [ProducesResponseType(400, Type = typeof(BaseResponse))]
+        [ProducesResponseType(404, Type = typeof(BaseResponse))]
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [Authorize]
+        [HttpDelete("[action]")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
+            return HandleResult(await _productService.Delete(id));
         }
     }
 }
