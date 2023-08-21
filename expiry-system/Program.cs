@@ -1,5 +1,6 @@
 using Application.ConfigSettings;
 using Application.DTOs;
+using Application.DTOs.Mail;
 using Application.InfraInterfaces;
 using Application.Services.Implementation;
 using Application.Services.Implementations;
@@ -7,6 +8,7 @@ using Application.Services.Implementations.Auth;
 using Application.Services.Interface;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Humanizer.Configuration;
 using Infrastructure.Helpers;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -142,6 +144,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserAuthService, UserAuthService>();
 builder.Services.AddScoped<IOTPService, OTPService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
 
 
 
