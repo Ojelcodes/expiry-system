@@ -54,7 +54,7 @@ namespace Application.Services.Implementations.Auth
 
             var store = new Store
             {
-                Name = registerUser.StoreName,
+                Name = $"{registerUser.FirstName} Stores",
                 Address = registerUser.Address
             };
             _context.Stores.Add(store);

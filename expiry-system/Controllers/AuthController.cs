@@ -137,14 +137,14 @@ namespace productExpiry_system.Controllers
         /// </summary>
         /// <param name="email"></param>
         /// <returns></returns>
-        [HttpGet("[action]")]
+        [HttpPost("[action]")]
         [ProducesResponseType(400, Type = typeof(BaseResponse))]
         [ProducesResponseType(200, Type = typeof(BaseResponse))]
-        public async Task<IActionResult> ResendOTP(string email)
+        public async Task<IActionResult> ResendOTP(ResendOTPDTO resendOTP)
         {
             _logger.LogInformation($"Resend Confrim Account Request \n");
             if (!ModelState.IsValid) return BadRequest(ResponseHelper.BuildResponse("30", ModelState));
-            return HandleResult(await _userAuthService.ResendConfirmationOTP(email));
+            return HandleResult(await _userAuthService.ResendConfirmationOTP(resendOTP.Email));
         }
     }
 }

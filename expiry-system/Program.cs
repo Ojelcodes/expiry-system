@@ -143,6 +143,14 @@ builder.Services.AddScoped<IUserAuthService, UserAuthService>();
 builder.Services.AddScoped<IOTPService, OTPService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CORS",
+        builder =>
+        builder.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
 
 
@@ -170,6 +178,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("CORS");
 
 
 app.UseAuthentication();

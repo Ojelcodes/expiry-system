@@ -20,11 +20,8 @@ namespace Application.DTOs.ApplicationUser
         public string PhoneNumber { get; set; }
         [Required]
         public string Password { get; set; }
-        [Required]
         public string StoreName { get; set; }
         [Required]
         public string Address { get; set; }
-        [Required]
-        public bool AgreeToAllPolicies { get; set; }
     }
 }
