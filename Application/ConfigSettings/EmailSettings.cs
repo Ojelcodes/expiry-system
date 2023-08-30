@@ -8,7 +8,7 @@ namespace Application.ConfigSettings
 {
     public class EmailSettings
     {
-        public string BaseUrl { get; set; }
-        public string SendEmail { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
     }
 }

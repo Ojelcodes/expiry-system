@@ -1,8 +1,12 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Product;
+using Application.InfraInterfaces;
 using Application.Services.Implementations;
 using Application.Services.Interface;
 using Domain.Entities;
+using Hangfire;
+using Hangfire.Server;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Data;
@@ -17,10 +21,15 @@ namespace Application.Services.Implementation
     public class ProductService : BaseService , IProductService
     {
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
+        private readonly IWebHostEnvironment _environment;
 
-        public ProductService(ApplicationDbContext context, IHttpContextAccessor accessor) : base(accessor)
+        public ProductService(ApplicationDbContext context, INotificationService notificationService ,
+             IWebHostEnvironment environment ,IHttpContextAccessor accessor) : base(accessor)
         {
             _context = context;
+            _notificationService = notificationService;
+            _environment = environment;
         }
 
         public async Task<BaseResponse> Create(CreateProductDTO create)
@@ -39,6 +48,9 @@ namespace Application.Services.Implementation
             };
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
+
+            var totalDays = (create.ExpiryDate - DateTime.Now).TotalDays;
+            BackgroundJob.Schedule(() => SendEmailNotifications(product.Id, null), DateTime.Now.AddDays(totalDays / 2));
             return BaseResponse.Success();
         }
 
@@ -119,5 +131,65 @@ namespace Application.Services.Implementation
 
             return PageBaseResponse<List<GetProductDTO>>.Success(data, pageNumber, pageSize, pageCount, recordCount, productQuery.Count());
         }
+
+        public BaseResponse<List<GetProductDTO>> AboutToRunOutOfStock()
+        {
+            var productQuery = _context.Products.Where(x => x.StoreId == StoreId && !x.IsDeleted && x.StockCount < 50);
+
+            var data = productQuery.Select(x => new GetProductDTO
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Category = x.Category,
+                StockCount = x.StockCount,
+                ExpiryDate = x.ExpiryDate,
+                ManufacturedDate = x.ManufacturedDate,
+                Price = x.Price,
+                DateCreated = x.DateCreated,
+                DateUpdated = x.DateUpdated
+            }).Take(5).ToList();
+
+            return BaseResponse<List<GetProductDTO>>.Success(data);
+        }
+
+        public BaseResponse<List<GetProductDTO>> AboutToExpire()
+        {
+            var productQuery = _context.Products.Where(x => x.StoreId == StoreId && !x.IsDeleted && x.ExpiryDate <= DateTime.Now.AddMonths(6));
+
+            var data = productQuery.Select(x => new GetProductDTO
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Category = x.Category,
+                StockCount = x.StockCount,
+                ExpiryDate = x.ExpiryDate,
+                ManufacturedDate = x.ManufacturedDate,
+                Price = x.Price,
+                DateCreated = x.DateCreated,
+                DateUpdated = x.DateUpdated
+            }).Take(5).ToList();
+
+            return BaseResponse<List<GetProductDTO>>.Success(data);
+        }
+
+        [AutomaticRetry(Attempts = 0)]
+        public async Task SendEmailNotifications(long productId, PerformContext context)
+        {
+            var product = await _context.Products.Include(x => x.Store).SingleOrDefaultAsync(x => x.Id == productId && !x.IsDeleted);
+            if (product != null)
+            {
+                var message = $"Your product - {product.Name} will expire on {product.ExpiryDate.Date.ToShortDateString()}. Try to sell it before it does";
+                var path = Path.Combine(_environment.WebRootPath, "EmailTemplates") + "\\genericTemplate.html";
+                var htmlTemplate = File.ReadAllText(path);
+                var emailTemplate = htmlTemplate.Replace("{{Name}}", $"{product.Store.Name}").Replace("{{Content}}", message);
+                await _notificationService.SendMail(new EmailRequest
+                {
+                    Subject = "Product Expiry System Notification",
+                    Message = emailTemplate,
+                    Email = product.Store.EmailAddress
+                });
+            }
+        }
+
     }
 }

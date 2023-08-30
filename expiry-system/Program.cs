@@ -7,6 +7,8 @@ using Application.Services.Implementations.Auth;
 using Application.Services.Interface;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Hangfire;
+using Hangfire.Dashboard;
 using Infrastructure.Helpers;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -136,12 +138,18 @@ builder.Services.AddAuthentication(options =>
 //----------------------------------------  Configuration Settings -------------------------------------------------//
 
 builder.Services.Configure<AppEndpointSettings>(builder.Configuration.GetSection("AppEndpointSettings"));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserAuthService, UserAuthService>();
 builder.Services.AddScoped<IOTPService, OTPService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+
+builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("BackgroundDB")));
+builder.Services.AddHangfireServer();
 
 builder.Services.AddCors(options =>
 {
@@ -177,6 +185,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHangfireDashboard("/hangfireywu9339N23WEqssd", new DashboardOptions
+{
+    Authorization = new[] { new MyAuthorizationFilter() }
+});
+
 app.UseHttpsRedirection();
 
 app.UseCors("CORS");
@@ -189,3 +202,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+public class MyAuthorizationFilter : IDashboardAuthorizationFilter
+{
+    public bool Authorize(DashboardContext context)
+    {
+        return true;
+    }
+}
+

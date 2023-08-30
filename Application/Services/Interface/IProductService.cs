@@ -10,6 +10,8 @@ namespace Application.Services.Interface
 {
     public interface IProductService
     {
+        BaseResponse<List<GetProductDTO>> AboutToExpire();
+        BaseResponse<List<GetProductDTO>> AboutToRunOutOfStock();
         Task<BaseResponse> Create(CreateProductDTO create);
         Task<BaseResponse> Delete(long id);
         Task<BaseResponse> Get(long id);

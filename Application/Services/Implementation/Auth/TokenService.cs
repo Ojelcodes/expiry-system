@@ -42,7 +42,7 @@ namespace Application.Services.Implementations.Auth
         {
             _logger.LogInformation($"Processing Auth Token For User [Email : {user.Email}] \n");
             var roles = await _userManager.GetRolesAsync(user);
-            var expiryTime = DateTimeOffset.Now.AddMinutes(7);
+            var expiryTime = DateTimeOffset.Now.AddDays(7);
             //Generate Token
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtSettings.Secret));

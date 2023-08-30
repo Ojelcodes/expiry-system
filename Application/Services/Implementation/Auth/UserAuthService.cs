@@ -23,6 +23,7 @@ namespace Application.Services.Implementations.Auth
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEncryptionService _encryptionService;
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
         private readonly ITokenService _tokenService;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IOTPService _otpService;
@@ -30,7 +31,7 @@ namespace Application.Services.Implementations.Auth
 
         public UserAuthService(ILogger<UserAuthService> logger , IWebHostEnvironment environment,UserManager<ApplicationUser> userManager
             , ITokenService tokenService,IOptions<AppEndpointSettings> appEndpointSettings, SignInManager<ApplicationUser> signInManager ,
-            IOTPService otpService, IEncryptionService encryptionService,ApplicationDbContext context, IHttpContextAccessor accessor) : base(accessor)
+            IOTPService otpService, IEncryptionService encryptionService,ApplicationDbContext context,INotificationService notificationService, IHttpContextAccessor accessor) : base(accessor)
         {
             _logger = logger;
             _environment = environment;
@@ -41,6 +42,7 @@ namespace Application.Services.Implementations.Auth
             _otpService = otpService;
             _encryptionService = encryptionService;
             _context = context;
+            _notificationService = notificationService;
         }
 
         public async Task<BaseResponse> RegisterUser(RegisterDTO registerUser)
@@ -55,7 +57,8 @@ namespace Application.Services.Implementations.Auth
             var store = new Store
             {
                 Name = $"{registerUser.FirstName} Stores",
-                Address = registerUser.Address
+                Address = registerUser.Address,
+                EmailAddress = registerUser.Email
             };
             _context.Stores.Add(store);
             await _context.SaveChangesAsync();
@@ -78,6 +81,17 @@ namespace Application.Services.Implementations.Auth
                 var createOTP = await _otpService.CreateOTP(user.Id, OTPActions.ConfirmAccount.ToString());
                 var otpCode = createOTP.Data;
                 // Send Notification Email for email confirmation
+
+                var message = $"This is your OTP number {otpCode}. Use it to confirm your account";
+                var path = Path.Combine(_environment.WebRootPath, "EmailTemplates") + "\\genericTemplate.html";
+                var htmlTemplate = File.ReadAllText(path);
+                var emailTemplate = htmlTemplate.Replace("{{Name}}", user.FirstName).Replace("{{Content}}", message);
+                await _notificationService.SendMail(new EmailRequest
+                {
+                    Subject = "Confirm Expiry System Account",
+                    Message = emailTemplate,
+                    Email =  user.Email
+                });
 
                 return BaseResponse.Success();
             }
@@ -164,6 +178,16 @@ namespace Application.Services.Implementations.Auth
                  $"&emailToken={HttpUtility.UrlEncode(token)}";
 
                 // Send reset password notification
+
+                var path = Path.Combine(_environment.WebRootPath, "EmailTemplates") + "/resetPassword.html";
+                var htmlTemplate = File.ReadAllText(path);
+                var resetPasswordTemplate = htmlTemplate.Replace("{{Name}}", user.FirstName).Replace("{{ResetLink}}", passwordResetLink);
+                await _notificationService.SendMail(new EmailRequest
+                {
+                    Subject = "Reset Expiry System Account",
+                    Message = resetPasswordTemplate,
+                    Email = user.Email
+                });
 
                 return BaseResponse.Success("A password reset link would be sent to the email address if it exist");
             }
@@ -256,6 +280,18 @@ namespace Application.Services.Implementations.Auth
             var otpCode = createOTP.Data;
 
             // Send OTP notification mail 
+
+
+            var message = $"This is your OTP number {otpCode}. Use it to confirm your account";
+            var path = Path.Combine(_environment.WebRootPath, "EmailTemplates") + "\\genericTemplate.html";
+            var htmlTemplate = File.ReadAllText(path);
+            var emailTemplate = htmlTemplate.Replace("{{Name}}", user.FirstName).Replace("{{Content}}", message);
+            await _notificationService.SendMail(new EmailRequest
+            {
+                Subject = "Confirm Expiry System Account",
+                Message = emailTemplate,
+                Email = user.Email
+            });
 
             return BaseResponse.Success() ;
         }

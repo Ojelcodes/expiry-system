@@ -34,6 +34,30 @@ namespace productExpiry_system.Controllers
         }
 
         /// <summary>
+        /// Get About to expire Product
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpGet("[action]")]
+        [Authorize]
+        public ActionResult AboutToExpire()
+        {
+            return HandleResult(_productService.AboutToExpire());
+        }
+
+        /// <summary>
+        /// Get about to run out of stock Product
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(200, Type = typeof(BaseResponse))]
+        [HttpGet("[action]")]
+        [Authorize]
+        public ActionResult AboutToRunOutOfStock()
+        {
+            return HandleResult(_productService.AboutToRunOutOfStock());
+        }
+
+        /// <summary>
         /// Get Product
         /// </summary>
         /// <param name="id"></param>
